@@ -1,0 +1,703 @@
+---
+title: "Approach–avoidance tendencies and physical activity level:\\
+A systematic review and meta-analysis"
+author: "Jabouille F, Boisgontier MP"
+date: "`r format(Sys.Date(),'%e of %B, %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    toc_depth: 3
+---
+<style>
+body{
+  font-size: 8pt;
+}
+</style>
+---
+
+# R Markdown file set-up
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(
+  root.dir = normalizePath(".", winslash = "/", mustWork = TRUE)
+)
+
+knitr::opts_chunk$set(
+   echo = TRUE,
+  fig.path = "figures/figure-latex/",
+  dev = "pdf"
+)
+options(tinytex.verbose = TRUE)
+```
+
+Packages required: 
+1) dmetar 
+2) tidyverse 
+3) meta 
+4) metafor 
+5) metasens
+6) esc
+7) dplyr
+8) stringr
+
+
+```{r packages, include=FALSE}
+#Install tidyverse package if needed for 'glimpse'
+if(!require(tidyverse)){install.packages('tidyverse')}
+#Load tidyverse package
+library(tidyverse)
+
+#Install meta package if needed for meta-analysis
+if(!require(meta)){install.packages('meta')}
+#Load meta package
+library(meta)
+
+#Install metafor package if needed for meta-analysis
+if(!require(metafor)){install.packages('metafor')}
+#Load metfor package
+library(metafor)
+
+#Install dmetar package if needed for meta-analysis
+if(!require(dmetar)){install.packages('dmetar')}
+#Load metfor package
+library(dmetar)
+
+#Install metasens package if needed for meta-analysis
+if(!require(metasens)){install.packages('metasens')}
+#Load metfor package
+library(metasens)
+
+#Install esc package if needed for Fisher z conversion to r
+if(!require(esc)){install.packages('esc')}
+#Load esc package
+library(esc)
+
+```
+
+
+```{r import data file, include=FALSE}
+AA_r <- read.csv("PA_Approach-avoidance_r.csv", 
+                      header = TRUE, sep = ",")
+AA_rho <- read.csv("PA_Approach-avoidance_rho.csv", 
+                      header = TRUE, sep = ",")
+## --- Primary dataset (Pearson r) ---
+# z and var.z calculation
+if (!all(c("z","var.z") %in% names(AA_r))) {
+  tmp <- metafor::escalc(measure = "ZCOR", ri = AA_r$Cor, ni = AA_r$n)
+  AA_r$z     <- tmp$yi
+  AA_r$var.z <- tmp$vi
+}
+
+## --- Secondary dataset (Spearman r) ---
+# z and var.z calculation
+if (!all(c("z","var.z") %in% names(AA_rho))) {
+  tmp <- metafor::escalc(measure = "ZCOR", ri = AA_rho$Cor, ni = AA_rho$n)
+  AA_rho$z     <- tmp$yi
+  AA_rho$var.z <- tmp$vi
+}
+
+```
+
+# Data file glimpse (not included in PDF)
+
+```{r glimpse, include=FALSE}
+glimpse(AA_r)
+glimpse(AA_rho)
+```
+
+# Meta-analysis method
+
+In the main meta-analysis, we pooled Pearson product–moment correlations from eligible studies to examine the relationship between approach–avoidance tendencies and physical activity. When exact p-values were not reported in an article, but the sample size (n) and Pearson’s correlation coefficient were available, the exact p-value was computed using an ad-hoc R code.
+Correlations were pooled using the generic inverse-variance method via the metacor function in the R meta package (Schwarzer et al., 2023a). This function automatically performs the necessary Fisher’s z-transformation on the original, untransformed correlations prior to pooling and reconverts the pooled estimate back to the original correlation metric for ease of interpretation.
+When multiple correlations originated from the same study (e.g., Fessler, 2024), we accounted for within-study dependence using two complementary approaches. First, we employed a three-level model implemented in the metafor package (Viechtbauer, 2010, 2023) with random effects specified as ~ 1 | Author/Cluster. Second, we conducted a parallel meta-analysis using the meta package (metacor, cluster = Author) with Knapp–Hartung adjustments to obtain cluster-robust confidence intervals.
+We anticipated considerable between-study heterogeneity and therefore used a random-effects model to pool the correlations. The restricted maximum likelihood (REML) estimator (Viechtbauer et al., 2005) was used to estimate the heterogeneity variance (τ²). To further quantify heterogeneity, we reported the I² statistic, which represents the percentage of variability in observed correlations not attributable to sampling error (Higgins et al., 2002). The I² values were interpreted as follows: 0–40%, might not be important; 30–60%, may represent moderate heterogeneity; 50–90%, substantial heterogeneity; and 75–100%, considerable heterogeneity.
+To reduce the risk of false positives, we applied the Knapp–Hartung adjustment (Knapp et al., 2003) when calculating the confidence interval around the pooled association. We also report the prediction interval, which provides a range within which future studies’ effects are expected to fall given the current evidence. The pooled correlation was interpreted according to Cohen’s (1988) conventions: r ≈ 0.10 (small), r ≈ 0.30 (moderate), and r ≈ 0.50 (large).
+
+Egger’s regression test of funnel plot asymmetry (Egger et al., 1997) and a p-curve analysis (Simonsohn et al., 2014) were conducted to assess potential publication bias in our meta-analysis. The Rücker’s limit meta-analysis method (Schwarzer et al., 2023b), which explicitly includes the heterogeneity variance in the model, was used to compute bias-corrected estimate of the true effect size.
+
+A secondary meta-analysis was conducted using the same approach, but based on Spearman’s rho values, to further test the relationship between approach-avoidance tendencies and physical activity.
+
+Subgroup analyses were conducted to examine the differences in correlations between studies that included participants with different health conditions, used different types approach-avoidance measures, and used self-reported versus device-based measure of physical activity.
+
+Meta-regressions were conducted to examine if the average age of participants, the proportion of women, or the quality score of a study predicted the reported correlation between approach-avoidance tendencies and physical activity. 
+
+All analyses were conducted in RStudio integrated development environment (IDE) (2025.09.0 Build 387, “Cucumberleaf Sunflower” release) running R 4.4.2 (R Core Team, 2024), using the ‘meta’ (Schwarzer, 2023), ‘metasens’ (Schwarzer et al., 2023), and ‘metafor’ (Viechtbauer, 2010; Viechtbauer, 2023) R packages.
+
+## Primary analysis using metafor to compare models
+Cluster represents the independent groups, whereas Effect_ID represents the effect sizes nested within these groups.
+```{r primary meta-analysis RE REML using metafor}
+mv.cor <- rma.mv(
+  yi     = AA_r$z,
+  V      = AA_r$var.z,
+  data   = AA_r,
+  slab   = AA_r$Cluster,
+  random = ~ 1 | Cluster/Effect_ID,
+  test   = "t",
+  method = "REML"
+)
+summary(mv.cor)
+```
+
+```{r Convert Fisher z back to Pearsons r}
+est_z <- as.numeric(coef(mv.cor))
+ci_z  <- as.data.frame(confint(mv.cor))[, c("ci.lb", "ci.ub")][1, ]
+
+c(est = round(metafor::transf.ztor(est_z), 2),
+  lcl = round(metafor::transf.ztor(ci_z[1]), 2),
+  ucl = round(metafor::transf.ztor(ci_z[2]), 2))
+```
+
+### Explore heterogeneity
+
+```{r Heterogeneity}
+i2 <- var.comp(mv.cor)
+summary(i2)
+plot(i2)
+```
+
+The multilevel variance decomposition indicated that sampling error variance (Level 1) accounted for 51.78% of the total variance, while within-study heterogeneity (Level 2) was negligible (I² = 0%). The share of variance originated from between-study heterogeneity (Level 3) represented 48.22% of the total variance. Overall, these results suggest that heterogeneity was primarily driven by differences between studies rather than by variability within studies.
+
+
+### Comparing models
+
+Reduced model in which the level 3 variance (between-study heterogeneity) is set to 0, which assumes all effect sizes are independent.
+
+```{r level 3 variance set to 0}
+l3.removed <- rma.mv(yi = z, 
+                     V = var.z, 
+                     slab = Cluster,
+                     data = AA_r,
+                     random = ~ 1 | Cluster/Effect_ID,
+                     test = "t", 
+                     method = "REML",
+                     sigma2 =  c(0, NA))
+
+summary(l3.removed)
+```
+
+Comparing full and reduced models.
+
+```{r comparison of models}
+anova(mv.cor, l3.removed)
+```
+
+The comparison between the 2-level and 3-level models did not provide evidence to retain the more complex structure. The 2-level model showed slightly better fit indices (AIC = −9.50 vs. −7.62; BIC = −7.41 vs. −4.49), and the likelihood ratio test indicated that the improvement offered by the 3-level model was not statistically significant (χ² = 0.12, p = .73). However, given that several studies contributed multiple effect sizes, the 3-level model was nevertheless retained on methodological grounds, as it more appropriately accounts for the dependence among estimates and avoids violating the assumption of independence.
+
+## Primary analysis using metacor
+
+```{r meta-analysis RE REML and Knapp-Hartung adjustment}
+m.cor <- metacor(
+  cor = Cor, n = n,
+  studlab = paste(Cluster),
+  data = AA_r,
+  random = TRUE, common = FALSE,
+  method.tau = "REML",
+  hakn = TRUE,
+  cluster = Cluster,
+  prediction = TRUE,
+  title = "Primary meta-analysis using metacor"
+)
+summary(m.cor)
+```
+
+Our meta-analysis of 18 studies (n = 2,070) using a three-level random-effects model showed a statistically significant small positive correlation between approach–avoidance tendencies and physical activity (r = 0.11; 95% CI [0.04, 0.18]; p = .004).
+
+Heterogeneity analyses showed that most of the variability came from differences between studies (tau²_between = 0.0106; tau¹ = 0.1028), while variation within studies was almost nonexistent (tau²_within < 0.0001). In other words, studies tended to differ from one another rather than producing inconsistent results internally. Overall heterogeneity was moderate to substantial (I² = 49.9%, 95% CI [18.0%, 69.3%]; Q(21) = 41.87, p = .0044), suggesting that factors like measurement methods or participant characteristics likely influenced the size of the observed effects.
+
+The prediction interval (ranging from r = −0.11 to 0.32) further indicates that although the average effect is positive, future research could still find weaker, null, or even negative associations depending on the context. Taken together, these results point to a relationship that is statistically reliable but modest in size, emphasizing the need to consider heterogeneity when interpreting and generalizing these findings.
+
+```{r Forest plot AA, fig.height=6, fig.width=14, echo=FALSE, results='hide', fig.show='hide'}
+pdf("figures/figure-latex/Forest plot AA.pdf",
+    width = 14, height = 6, onefile = FALSE)
+
+forest(
+  m.cor,
+  layout = "Revman5",
+  sortvar = -TE,
+  prediction = TRUE,
+  print.tau2 = FALSE,
+
+  leftcols = c("Author", "Cluster", "n", "w.random", "effect.ci"),
+  leftlabs = c("Author", "Cluster", "Total", "Weight", "Correlation\nIV, Random, 95% CI"),
+
+  rightcols = FALSE,
+
+  print.effect = TRUE,
+  print.ci = TRUE,
+
+  colgap.left = "3mm",
+  colgap.forest.left = "6mm",
+  colgap.forest.right = "6mm",
+
+  xlim = c(-1, 1),
+  fs.study = 10,
+  fs.hetstat = 9,
+  fs.axis = 10,
+  addrows.below.overall = 3
+)
+dev.off()
+```
+
+```{r include Forest plot main analysis}
+knitr::include_graphics("figures/figure-latex/Forest plot AA.pdf")
+```
+
+# Secondary analysis based on Spearman's rho values
+
+## Secondary meta-analysis of rho values with metacor
+
+```{r Secondary meta-analysis based on rho values}
+m.cor.rho <- metacor(cor = Cor, 
+                 n = n,
+                 data = AA_rho,
+                 studlab = Cluster,
+                 fixed = FALSE,
+                 random = TRUE,
+                 method.tau = "REML",
+                 hakn = TRUE,
+                 prediction = TRUE)
+summary(m.cor.rho)
+```
+
+The secondary analysis using Spearman’s rho (k = 2, n = 277) showed a very small and non-significant negative correlation (r = –0.08, 95% CI [–0.69, 0.60], p = 0.41). No heterogeneity was detected (τ² = 0.00; I² = 0%), which is expected with only two studies. The prediction interval (–0.69 to 0.60) indicates that future research may still observe either negative, null, or positive effects, highlighting the need for more data before firm conclusions can be drawn.
+
+# Meta-analysis: subgroup analyses
+
+## Subgroup analysis by physical activity objectivity measurement
+
+```{r Subgroup analysis by PA measure objectivity}
+AA_r$PA_objectivity <- as.factor(AA_r$PA_objectivity)
+
+PAobj_subg <- update(m.cor, 
+            subgroup = PA_objectivity, 
+            tau.common = TRUE)
+PAobj_subg
+```
+
+A subgroup analysis was conducted to examine whether the association between approach-avoidance tendencies and physical activity differed in self-reported (k = 17) and device-based measures of physical activity (k = 5). Results showed no evidence of a moderation effect (Q(1) = 0.07, p = .795).
+
+```{r PA_objectivity subgroup forest plot, fig.height=12, fig.width=10}
+pdf("figures/figure-latex/PA_objectivity subgroup forest plot.pdf",
+    width = 10, height = 11, onefile = FALSE)
+
+forest(PAobj_subg, 
+            layout = "RevMan5", 
+            sortvar = -TE, 
+            leftcols = c("Author", "Cluster", "n", "w.random", "effect.ci"),
+            leftlabs = c("Author", "Cluster", "Total", "Weight", "Correlation\nIV, Random, 95% CI"),
+            common = FALSE, 
+            xlim = c(-1.0, 1.0), 
+            prediction = TRUE, 
+            fontsize = 11,
+            fs.hetstat = 10,  
+            col.subgroup = 'black',
+            addrows.below.overall = 2)
+
+dev.off()
+```
+
+
+```{r include_forest_plot_for_subgroup_by_PA_objectivity, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/PA_objectivity subgroup forest plot.pdf")
+```
+
+## Subgroup analysis by testing context
+
+```{r Subgroup analysis by testing context}
+AA_r$Testing_context <- as.factor(AA_r$Testing_context)
+
+Testing_context <- update(m.cor, 
+            subgroup = Testing_context, 
+            tau.common = TRUE)
+
+Testing_context
+Testing_context$pval.random.w
+```
+A subgroup meta-analysis was conducted to examine whether the association differed by testing context (in-person vs. online). Results showed a moderation by testing context (Q(1) = 4.90, p = .039), with a small positive association in in-person studies (r = .16, 95% CI: .08, .24, p = .0006), but not evidence of an association in online studies (r = .03, 95% CI: −.06, .12, p = .522) 
+
+
+```{r testing_context_subgroup_forest_plot, fig.height=12, fig.width=10}
+pdf("figures/figure-latex/testing_context_subgroup_forest_plot.pdf",
+    width = 10, height = 12, onefile = FALSE)
+
+forest(Testing_context, 
+            layout = "RevMan5", 
+            sortvar = -TE, 
+            leftcols = c("Author", "Cluster", "n", "w.random", "effect.ci"),
+            leftlabs = c("Author", "Cluster", "Total", "Weight", "Correlation\nIV, Random, 95% CI"),
+            common = FALSE, 
+            xlim = c(-1.0, 1.0), 
+            prediction = TRUE, 
+            fontsize = 11,
+            fs.hetstat = 10,  
+            col.subgroup = 'black',
+            addrows.below.overall = 2)
+
+dev.off()
+```
+
+```{r include_forest_plot_for_subgroup_by_testing_context, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/testing_context_subgroup_forest_plot.pdf")
+```
+
+
+## Subgroup analysis by approach-avoidance measures
+
+```{r Subgroup analysis by types of AAT}
+AA_r$AAT_measure <- as.factor(AA_r$AAT_measure)
+
+AAT_subg <- update(m.cor, 
+            subgroup = AAT_measure, 
+            tau.common = TRUE)
+AAT_subg
+```
+A subgroup analysis was conducted to compare the association between approach-avoidance tendencies and physical activity across different approach-avoidance tasks: the Manikin task (k = 12), the modified Manikin task (k = 1), the IAT-RF (k = 1), the joystick-based approach-avoidance tasks (k = 3), and the VAAST (k = 5). Results showed no evidence of a variation between tasks (Q(4) = 0.67, p = .621).
+
+
+```{r AAT_subgroup_forest_plot, fig.height=12, fig.width=10}
+pdf("figures/figure-latex/AAT_subgroup_forest_plot.pdf",
+    width = 10, height = 12, onefile = FALSE)
+
+forest(AAT_subg, 
+            layout = "RevMan5", 
+            sortvar = -TE, 
+            leftcols = c("Author", "Cluster", "n", "w.random", "effect.ci"),
+            leftlabs = c("Author", "Cluster", "Total", "Weight", "Correlation\nIV, Random, 95% CI"),
+            common = FALSE, 
+            xlim = c(-1.0, 1.0), 
+            prediction = TRUE, 
+            fontsize = 11,
+            fs.hetstat = 10,  
+            col.subgroup = 'black',
+            addrows.below.overall = 2)
+
+dev.off()
+```
+
+```{r include_forest_plot_for_subgroup_by_AAT_measure, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/AAT_subgroup_forest_plot.pdf")
+```
+
+# Meta-analysis: meta-regression (19 clusters)
+
+## Meta-regression by age
+
+```{r Meta-regression by age}
+m.cor.reg.age <- metareg(m.cor, ~Age)
+m.cor.reg.age
+```
+
+A meta-regression was conducted to examine whether participants’ mean age moderated the relationship between approach–avoidance tendencies and physical activity. Results indicated that age did not significantly predict the effect sizes, b = −0.002, 95% CI [−0.008, 0.003], t(20) = −0.86, p = .402.
+
+```{r Bubble plot for meta-regression by age, fig.height=6, fig.width=6}
+pdf("figures/figure-latex/Bubble plot for meta-regression by age.pdf",
+    width = 6, height = 6, onefile = FALSE)
+
+Age.bubble <- bubble(m.cor.reg.age, 
+                     xlim = c(18, 65), 
+                     ylim = c(-0.5, 0.5),
+                     xlab = 'Age (years)',
+                     font.lab = 2,
+                     studlab = TRUE, 
+                     cex = 2, 
+                     cex.studlab = 0.5, 
+                     pos.studlab = 4, 
+                     offset = 0.5, 
+                     col.line = 'red')
+
+Age.bubble
+
+dev.off()
+```
+
+```{r include_meta-regression by age, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/Bubble plot for meta-regression by age.pdf")
+```
+
+## Meta-regression by proportion of women
+
+```{r Meta-regression by proportion of women}
+m.cor.reg.women <- metareg(m.cor, ~Prop_women)
+m.cor.reg.women
+```
+
+The proportion of women did not statistically influence the correlation
+values of the meta-analysis studies (b = −0.13, 95% CI [−0.72, 0.47], t(20) = −0.45, p = 0.661).
+
+```{r Bubble plot for meta-regression by proportion of women, fig.height=6, fig.width=6}
+pdf("figures/figure-latex/Bubble plot for meta-regression by proportion of women.pdf",
+    width = 6, height = 6, onefile = FALSE)
+
+Propwomen.bubble <- bubble(m.cor.reg.women, 
+       xlim = c(0, 1), 
+       ylim = c(-0.5, 0.5), 
+       xlab = 'Proportion of women',
+       font.lab = 2,
+       studlab = TRUE, 
+       cex = 2, 
+       cex.studlab = 0.5, 
+       pos.studlab = 4, 
+       offset = 0.5, 
+       col.line = 'red')
+
+Propwomen.bubble
+
+dev.off()
+```
+
+```{r include_meta-regression by proportion of women, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/Bubble plot for meta-regression by proportion of women.pdf")
+```
+
+
+# Sensitivity analysis: meta-regression by quality score
+
+```{r Meta-regression by quality score}
+m.cor.reg.axis <- metareg(m.cor, ~ Quality_score_10)
+m.cor.reg.axis
+```
+
+The meta-regression by quality score based on the Quality Assessment Tool for Observational Cohort and Cross-Sectional Studies and the Quality assessment of Controlled Intervention Studies questionnaires (k = 18) showed that a study’s quality did not influence correlation values (b = −0.01, 95% CI [−0.06, 0.03], t(20) = −0.61, p = 0.551).
+
+```{r Bubble plot for meta-regression by quality score, fig.height=6, fig.width=6}
+pdf("figures/figure-latex/Bubble plot for meta-regression by quality score.pdf",
+    width = 6, height = 6, onefile = FALSE)
+Axis.bubble <- bubble(m.cor.reg.axis, 
+                xlim = c(0, 12), 
+                ylim = c(-1.0, 0.5), 
+                xlab = 'axis score',
+                studlab = TRUE, 
+                font.lab = 2,
+                cex = 1.5, 
+                cex.studlab = 0.5, 
+                pos.studlab = 4, 
+                offset = 0.5, 
+                col.line = 'red')
+Axis.bubble
+dev.off()
+```
+
+```{r include_meta-regression by quality score, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/Bubble plot for meta-regression by quality score.pdf")
+```
+
+```{r Grid of bubbleplots, fig.width=12, fig.height=6}
+parameter <- par(mfrow=c(1,3))
+
+parameter <- bubble(m.cor.reg.age, 
+                   xlim = c(35, 85), 
+                   ylim = c(-0.6, 0.1),
+                   xlab = 'Age (years)',
+                   font.lab = 2,
+                   studlab = F, 
+                   cex = 2, 
+                   cex.studlab = 0.5, 
+                   pos.studlab = 4, 
+                   offset = 0.5, 
+                   col.line = 'red')              
+
+parameter <- bubble(m.cor.reg.women, 
+                   xlim = c(0.1, 1), 
+                   ylim = c(-0.6, 0.1), 
+                   xlab = 'Proportion of women',
+                   font.lab = 2,
+                   studlab = F, 
+                   cex = 2, 
+                   cex.studlab = 0.5, 
+                   pos.studlab = 4, 
+                   offset = 0.5, 
+                   col.line = 'red')
+
+parameter <- bubble(m.cor.reg.axis, 
+                  xlim = c(0, 10), 
+                  ylim = c(-0.6, 0.1), 
+                  xlab = 'Quality score',
+                  studlab = F, 
+                  font.lab = 2,
+                  cex = 2, 
+                  cex.studlab = 0.5, 
+                  pos.studlab = 4, 
+                  offset = 0.5, 
+                  col.line = 'red')
+```
+
+
+# Publication bias analysis
+
+## Small-study effects
+
+### Funnel plot 
+
+```{r Contour-enhanced funnel plot for main analysis with labels, echo=FALSE, results='hide', fig.show='hide'}
+col.contour = c("gray75", "gray85", "gray95")
+
+pdf("figures/figure-latex/Contour-enhanced funnel plot for main analysis with labels.pdf",
+    width = 8, height = 6, onefile = FALSE)
+
+funnel(m.cor, 
+       xlim = c(-1.5, 1),
+       contour = c(0.9, 0.95, 0.99),
+       col.contour = col.contour,
+       studlab = TRUE,
+       cex = 1,
+       cex.studlab = 0.5, 
+       pos.studlab = 4, 
+       offset = 0.5)
+
+legend(x =0.5, y = 0.01, 
+       legend = c("p < 0.1", "p < 0.05", "p < 0.01"),
+       fill = col.contour)
+
+title("Contour-Enhanced Funnel Plot (Approach-avoidance tendencies and Physical Activity)")
+
+dev.off()
+```
+
+```{r include_funnel_plot_labels, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/Contour-enhanced funnel plot for main analysis with labels.pdf")
+```
+
+```{r Contour-enhanced funnel plot for main analysis no labels, fig.height=6, fig.width=8}
+col.contour = c("gray85", "gray75")
+
+pdf("figures/figure-latex/Contour-enhanced funnel plot for main analysis no labels.pdf",
+    width = 8, height = 6, onefile = FALSE)
+
+funnel(m.cor, 
+       xlim = c(-1.5, 1),
+       contour = c(0.95, 0.99),        
+       studlab = FALSE,
+       cex = 1,
+       cex.studlab = 0.5, 
+       pos.studlab = 4, 
+       offset = 0.5,
+       col.contour = col.contour)
+
+legend(x =0.5, y = 0.01, 
+       legend = c("p < 0.05", "p < 0.01"),
+       fill = col.contour)
+
+title("Contour-Enhanced Funnel Plot (Approach-avoidance tendencies and Physical Activity)")
+
+dev.off()
+```
+
+```{r include_funnel_plot_no_labels, echo=FALSE, out.width='100%', fig.align='center'}
+
+knitr::include_graphics("figures/figure-latex/Contour-enhanced funnel plot for main analysis no labels.pdf")
+```
+
+### Egger's test
+Because the primary meta-analysis accounted for dependent effect sizes using a model with clustering, Egger's test and Rücker’s limit meta-analysis could not be applied directly, as these methods are not implemented for these 3-level models. We therefore retained the model with clustering as the primary analysis and conducted a separate two-level sensitivity analysis for publication bias assessment.
+For the aggregated study-level sensitivity analyses, the sample size assigned to each aggregated effect corresponded to the largest sample size among effect sizes from the same study cluster, as these effects were based on overlapping samples.
+
+```{r Eggers test for main analysis}
+dat_es <- escalc(measure = "GEN", yi = z, vi = var.z, data = AA_r)
+
+dat_agg <- aggregate(
+  dat_es,
+  cluster = Cluster,
+  struct = "CS",
+  rho = 0.50,
+  weighted = TRUE
+)
+
+dat_agg$Cor_agg <- tanh(dat_agg$yi)
+
+n_by_cluster <- AA_r %>%
+  group_by(Cluster) %>%
+  summarise(
+    n_agg = max(n, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+dat_agg <- dat_agg %>%
+  left_join(n_by_cluster, by = "Cluster")
+
+# 2-level meta-analysis with 1 effect per cluster
+m.cor.2l <- metacor(
+  cor = Cor_agg,
+  n = n_agg,
+  studlab = Cluster,
+  data = dat_agg,
+  random = TRUE,
+  common = FALSE,
+  method.tau = "REML",
+  hakn = TRUE,
+  prediction = TRUE
+)
+
+metabias(m.cor.2l, method.bias = "linreg", k.min = 9)
+eggers.test(m.cor.2l)
+```
+
+Egger’s regression test showed that the data in the funnel plot was not asymmetric (b = 1.63, 95% CI: -0.07 to 3.33, p = 0.077).
+
+###  Limit meta-analysis 
+```{r Rücker Limit Meta-Analysis Method}
+limitmeta(m.cor.2l)
+```
+
+The bias-corrected estimate of the true effect size, calculated using Rücker’s limit meta-analysis method, indicated that the correlation was no longer statistically significant after adjustment for small-study effects (r = .04, 95% CI: −.08, .16, p = .488). The test for small-study effects was statistically significant (Q − Q = 6.63, p = .010), suggesting the presence of such effects. Residual heterogeneity remained significant after adjustment (Q = 31.74, p = .016), indicating that small-study effects alone do not fully account for the observed variability. These results may reflect publication bias, but could also be explained by other factors, such as differences in study procedures and between-study heterogeneity.
+
+
+## Pcurve analysis
+
+Standard errors of the correlation values were calculated using the
+formula: sqrt((1 - correlation_coefficient\^2) / (sample_size - 2))
+
+```{r pcurve for main analysis}
+p_curve_data = data.frame("studlab" = c(paste("Study_", 1:24, sep = "")),
+                 "TE" = c(0.06, 0.27, -0.06, -0.023, 0.26, 0.03, 0.25, 0.323, 0.187, -0.023, -0.082, 0.03, 0.27, -0.04, 0.04, 0.42, 0.12, -0.24, 0.15, 0.028, 0.585, 0.07, -0.12, 0.01),
+                      
+                  "seTE" = c(0.106, 0.099, 0.094, 0.094, 0.186, 0.099, 0.096, 0.1, 0.081, 0.171, 0.171, 0.088, 0.179, 0.053, 0.158, 0.274, 0.151, 0.259, 0.066, 0.071, 0.143, 0.106, 0.073, 0.108))
+
+pcurve(p_curve_data)
+```
+
+The 20 studies reporting a total of 24 correlation values (Pearson’s r or Spearman’s ρ) were considered for the p-curve analysis. Of these, 6 studies (25.0%) reported statistically significant results (p < .05), and all 6 had p < .025, allowing their inclusion in the p-curve. The remaining results (k = 18) were excluded because their p-values exceeded .05.
+
+The p-curve exhibited significant right-skewness, indicating evidential value in the literature. This was supported by the test for right-skewness for the full curve (p = .0012), whereas the half-curve test was not statistically significant (p = .0983). In addition, tests for flatness were non-significant (all p ≥ .888), suggesting that the distribution of significant findings is inconsistent with low evidential value or selective reporting alone.
+
+The estimated statistical power of the included studies was 65% (95% CI: 23% to 91%), indicating moderate evidential value. However, this estimate should be interpreted with caution given the relatively small number of significant results (k = 6) included in the analysis.
+
+
+# References
+
+-   Cohen J. Statistical power analysis for the behavioral sciences. 2nd
+    ed.; 1988.\
+-   Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis
+    detected by a simple, graphical test. BMJ. 1997;315(7109):629-634.
+    <https://doi.org/10.1136/bmj.315.7109.62>\
+-   Higgins JPT, Thompson SG. Quantifying heterogeneity in a
+    meta-analysis. Stat Med. 2002;21(11):1539-1558.
+    <https://doi.org/10.1002/sim.1186>
+-   Knapp G, Hartung J. Improved tests for a random effects
+    meta-regression with a single covariate. Stat Med.
+    2003;22(17):2693-2710. <https://doi.org/10.1002/sim.1482>\
+-   R Core Team. R: A language and environment for statistical computing
+    [Computer software]. Version 4.3.1. Vienna, Austria: Foundation for
+    Statistical Computing; 2023. <https://www.r-project.org>
+-   Schwarzer G. Meta: General package for meta-analysis [R package].
+    Version 6.5-0; 2023a.
+    <https://cran.r-project.org/web/packages/meta/meta.pdf>
+-   Schwarzer G, Carpenter RJ, Rücker G. Metasens: Advanced statistical
+    methods to model and adjust for bias in meta-analysis [R package].
+    Version 1.5-2; 2023b.
+    <https://cran.r-pro-ject.org/web/packages/metasens/metasens.pdf>\
+-   Simonsohn U, Nelson LD, Simmons JP. P-curve: A key to the
+    file-drawer. J Exp Psychol Gen. 2014;143(2):534-547.
+    <http://doi.org/10.1037/a0033242>\
+-   Viechtbauer W. Bias and efficiency of meta-analytic variance
+    estimators in the random-effects model. J Educ Behav Stat.
+    2005;30(3):261-293. <https://doi.org/10.3102/10769986030003261>\
+-   Viechtbauer W. Conducting meta-analyses in R with the metafor
+    package. J Stat Softw. 2010;36(3):1-48.
+    <https://doi.org/10.18637/jss.v036.i03>\
+-   Viechtbauer W. Metafor: Meta-analysis package for R [R package].
+    Version 4.2-0; 2023.
+    <https://cran.r-pro-ject.org/web/packages/metafor/metafor.pdf>\
+-   Viechtbauer, "W. (2023). Metafor: Meta-Analysis Package for R
+    (Version 4.2-0) [R pakage].
+    <https://cran.r-project.org/web/packages/metafor/metafor.pdf>
