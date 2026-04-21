@@ -11,8 +11,11 @@ Code and data for the article: "Approach-avoidance tendencies and physical activ
 ## File Structure
 
 - `data/`: Data used for analyses (CSV files)
+
   -> `PA_Approach-avoidance_r.csv` for the main analyses
+
   -> `PA_Approach-avoidance_rho.csv` for the secondary analysis
+
   -> `quality_scores_table.csv` containing the quality assessment scores for all included studies
 - `manuscript/`: Preprint and submission file
 - `R/`: R and Rmd scripts.
