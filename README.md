@@ -10,6 +10,7 @@ Code and data for the article: "Approach-avoidance tendencies and physical activ
 
 ## Folder Structure
 
+- `Supplemental material`: supplemental material of the manuscript.
 - `data/`: Data used for analyses (CSV files)
 
   -> `PA_Approach-avoidance_r.csv` for the main analyses
