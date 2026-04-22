@@ -10,7 +10,6 @@ Code and data for the article: "Approach-avoidance tendencies and physical activ
 
 ## Folder Structure
 
-- `Supplemental material`: supplemental material of the manuscript.
 - `data/`: Data used for analyses (CSV files)
 
   -> `PA_Approach-avoidance_r.csv` for the main analyses
@@ -18,7 +17,7 @@ Code and data for the article: "Approach-avoidance tendencies and physical activ
   -> `PA_Approach-avoidance_rho.csv` for the secondary analysis
 
   -> `quality_scores_table.csv` containing the quality assessment scores for all included studies
-- `manuscript/`: Preprint and submission file
+- `manuscript/`: Preprint and supplemental material of the manuscript
 - `R/`: R and Rmd scripts.
 
     -> `meta_approach_avoidance_PA.Rmd`: R Markdown file used to perform the full meta-analysis pipeline, including data cleaning, computation of effect sizes, statistical modeling, and generation of tables and figures.
