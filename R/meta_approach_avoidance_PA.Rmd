@@ -118,7 +118,7 @@ Egger’s regression test of funnel plot asymmetry (Egger et al., 1997) and a p-
 
 A secondary meta-analysis was conducted using the same approach, but based on Spearman’s rho values, to further test the relationship between approach-avoidance tendencies and physical activity.
 
-Subgroup analyses were conducted to examine the differences in correlations between studies that included participants with different health conditions, used different types approach-avoidance measures, and used self-reported versus device-based measure of physical activity.
+Subgroup meta-analyses were conducted to examine differences in correlations between studies using different testing contexts (in-person vs. online), types of approach-avoidance tasks (Manikin task vs. modified Manikin task vs. Visual Approach-Avoidance by the Self Task (VAAST) vs. Implicit Association Test-Recoding Free (IAT-RF) vs. joystick-based approach-avoidance task), stimulus type (pictograms vs. words vs. images), and types of physical activity measures (self-reported vs. device-based).
 
 Meta-regressions were conducted to examine if the average age of participants, the proportion of women, or the quality score of a study predicted the reported correlation between approach-avoidance tendencies and physical activity. 
 
@@ -153,7 +153,6 @@ c(est = round(metafor::transf.ztor(est_z), 2),
 ```{r Heterogeneity}
 i2 <- var.comp(mv.cor)
 summary(i2)
-plot(i2)
 ```
 
 The multilevel variance decomposition indicated that sampling error variance (Level 1) accounted for 51.78% of the total variance, while within-study heterogeneity (Level 2) was negligible (I² = 0%). The share of variance originated from between-study heterogeneity (Level 3) represented 48.22% of the total variance. Overall, these results suggest that heterogeneity was primarily driven by differences between studies rather than by variability within studies.
@@ -301,6 +300,45 @@ dev.off()
 ```{r include_forest_plot_for_subgroup_by_PA_objectivity, echo=FALSE, out.width='100%', fig.align='center'}
 knitr::include_graphics("figures/figure-latex/PA_objectivity subgroup forest plot.pdf")
 ```
+
+## Subgroup analysis by Stimuli Type
+
+```{r Subgroup analysis by stimuli type}
+AA_r$Stimuli_type<- as.factor(AA_r$Stimuli_type)
+
+stim_type <- update(m.cor, 
+            subgroup = Stimuli_type, 
+            tau.common = TRUE)
+stim_type
+```
+
+A subgroup meta-analysis was conducted to examine whether the association differed by stimulus type (pictograms vs. words vs. images). Results showed no evidence of a moderation effect (Q(2) = 0.25, p = .779). 
+
+```{r stim_type subgroup forest plot, fig.height=12, fig.width=10}
+pdf("figures/figure-latex/stim_type subgroup forest plot.pdf",
+    width = 10, height = 11, onefile = FALSE)
+
+forest(stim_type, 
+            layout = "RevMan5", 
+            sortvar = -TE, 
+            leftcols = c("Author", "Cluster", "n", "w.random", "effect.ci"),
+            leftlabs = c("Author", "Cluster", "Total", "Weight", "Correlation\nIV, Random, 95% CI"),
+            common = FALSE, 
+            xlim = c(-1.0, 1.0), 
+            prediction = TRUE, 
+            fontsize = 11,
+            fs.hetstat = 10,  
+            col.subgroup = 'black',
+            addrows.below.overall = 2)
+
+dev.off()
+```
+
+
+```{r include_forest_plot_for_subgroup_by_stim_type, echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figures/figure-latex/stim_type subgroup forest plot.pdf")
+```
+
 
 ## Subgroup analysis by testing context
 
