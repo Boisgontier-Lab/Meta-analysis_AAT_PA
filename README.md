@@ -2,7 +2,7 @@
 
 **Authors:** François Jabouille, Ata Farajzadeh, Matthieu P. Boisgontier
 
-**Contacts:** matthieu.boisgontier@uottawa.ca
+**Contacts:** francois.jabouille@uottawa.ca; matthieu.boisgontier@uottawa.ca
 
 ## Description
 
